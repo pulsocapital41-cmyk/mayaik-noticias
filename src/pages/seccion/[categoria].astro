@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Card from '../../components/Card.astro';
+import { getCollection } from 'astro:content';
+import { SECTIONS, slugify } from '../../config';
+
+export async function getStaticPaths() {
+  const todas = (await getCollection('noticias')).sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+  return SECTIONS.map((s) => ({
+    params: { categoria: s.slug },
+    props: { section: s, articles: todas.filter((a) => slugify(a.data.category) === s.slug) },
+  }));
+}
+const { section, articles } = Astro.props;
+---
+
+<BaseLayout title={`${section.name} — Mayaik Noticias`} description={section.desc}>
+  <div class="container">
+    <header class="page-head">
+      <h1>{section.name}</h1>
+      <p>{section.desc}</p>
+    </header>
+    <div class="section-title" style="margin-top:18px"><h2>{articles.length} {articles.length === 1 ? 'nota' : 'notas'}</h2></div>
+    {articles.length === 0
+      ? <p>Aún no hay notas en esta sección.</p>
+      : <div class="grid">{articles.map((a) => <Card article={a} />)}</div>}
+  </div>
+</BaseLayout>

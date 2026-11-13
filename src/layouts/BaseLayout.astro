@@ -1,0 +1,149 @@
+---
+import { SITE, SECTIONS } from '../config';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalURL?: string;
+  type?: 'website' | 'article';
+  pubDate?: Date;
+  author?: string;
+}
+
+const {
+  title = `${SITE.name} — ${SITE.tagline}`,
+  description = SITE.description,
+  image = '/logo.png',
+  canonicalURL = new URL(Astro.url.pathname, SITE.url).toString(),
+  type = 'website',
+  pubDate,
+  author = 'Redacción Mayaik Noticias',
+} = Astro.props;
+
+const fullTitle = title.includes(SITE.name) ? title : `${title} — ${SITE.name}`;
+const abs = (u: string) => (u.startsWith('http') ? u : new URL(u, SITE.url).toString());
+const iso = pubDate ? new Date(pubDate).toISOString() : undefined;
+
+const publisher = {
+  '@type': 'NewsMediaOrganization',
+  name: SITE.name,
+  url: SITE.url,
+  logo: { '@type': 'ImageObject', url: abs('/logo.png') },
+};
+
+const jsonLd =
+  type === 'article'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'NewsArticle',
+        mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalURL },
+        headline: title,
+        description,
+        image: [abs(image)],
+        datePublished: iso,
+        dateModified: iso,
+        author: [{ '@type': 'Person', name: author }],
+        publisher,
+        inLanguage: 'es-MX',
+      }
+    : { '@context': 'https://schema.org', ...publisher, description, sameAs: [] };
+
+const hoyTxt = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+const hoy = hoyTxt.charAt(0).toUpperCase() + hoyTxt.slice(1);
+const path = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
+    <meta name="theme-color" content="#7a1e33" />
+
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:type" content={type === 'article' ? 'article' : 'website'} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={abs(image)} />
+    <meta property="og:locale" content="es_MX" />
+    {iso && <meta property="article:published_time" content={iso} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={abs(image)} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Oswald:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="container topbar-in">
+        <span class="fecha">{hoy}</span>
+        <span class="lugar">Quintana Roo, México</span>
+      </div>
+    </div>
+
+    <header class="masthead">
+      <div class="container masthead-in">
+        <a href="/" class="brand" aria-label={`${SITE.name} — inicio`}>
+          <img src="/logo.png" alt="" class="brand-logo" width="96" height="70" />
+          <span class="brand-text">
+            <span class="brand-name">MAYAIK <b>NOTICIAS</b></span>
+            <span class="brand-tag">{SITE.tagline}</span>
+          </span>
+        </a>
+      </div>
+      <nav class="mainnav" aria-label="Secciones">
+        <div class="container mainnav-in">
+          <a href="/" class:list={[{ active: path === '/' }]}>Inicio</a>
+          {SECTIONS.map((s) => (
+            <a href={`/seccion/${s.slug}/`} class:list={[{ active: path.startsWith(`/seccion/${s.slug}`) }]}>{s.name}</a>
+          ))}
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <p class="footer-brand">MAYAIK <b>NOTICIAS</b></p>
+          <p class="footer-text">{SITE.description}</p>
+        </div>
+        <div>
+          <p class="footer-title">Secciones</p>
+          <ul class="footer-links">
+            {SECTIONS.map((s) => <li><a href={`/seccion/${s.slug}/`}>{s.name}</a></li>)}
+          </ul>
+        </div>
+        <div>
+          <p class="footer-title">Síguenos</p>
+          <ul class="footer-links">
+            <li><a href="/rss.xml">RSS</a></li>
+            <li><a href="/sitemap.xml">Mapa del sitio</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="container">© {new Date().getFullYear()} {SITE.name} · mayaiknoticias.com.mx</div>
+      </div>
+    </footer>
+  </body>
+</html>

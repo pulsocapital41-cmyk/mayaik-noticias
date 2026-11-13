@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mayaiknoticias.com.mx/sitemap.xml
+Sitemap: https://mayaiknoticias.com.mx/sitemap-index.xml

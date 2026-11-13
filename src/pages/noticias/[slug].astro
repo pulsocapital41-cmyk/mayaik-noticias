@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Card from '../../components/Card.astro';
+import { getCollection, render } from 'astro:content';
+import { slugify } from '../../config';
+
+export async function getStaticPaths() {
+  const todas = await getCollection('noticias');
+  return todas.map((article) => ({ params: { slug: article.id }, props: { article, todas } }));
+}
+const { article, todas } = Astro.props;
+const { Content } = await render(article);
+const d = article.data;
+const fechaTxt = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d.pubDate);
+const fecha = fechaTxt.charAt(0).toUpperCase() + fechaTxt.slice(1);
+const relacionadas = todas
+  .filter((a: any) => a.id !== article.id && a.data.category === d.category)
+  .sort((a: any, b: any) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+  .slice(0, 3);
+const desc = d.excerpt || d.subtitle;
+---
+
+<BaseLayout title={d.title} description={desc} image={d.image} type="article" pubDate={d.pubDate} author={d.author}>
+  <article class="article">
+    <nav class="crumbs" aria-label="Migas de pan">
+      <a href="/">Inicio</a> / <a href={`/seccion/${slugify(d.category)}/`}>{d.category}</a>
+    </nav>
+    <a class="chip" href={`/seccion/${slugify(d.category)}/`}>{d.category}</a>
+    <h1>{d.title}</h1>
+    {desc && <p class="lead">{desc}</p>}
+    <div class="byline">
+      <span>Por <strong>{d.author}</strong></span>
+      <time datetime={d.pubDate.toISOString()}>{fecha}</time>
+    </div>
+    {d.image && d.image !== '/logo.png' && (
+      <figure class="hero-img">
+        <img src={d.image} alt={d.title} fetchpriority="high" />
+        {d.imageCaption && <figcaption class="card-meta">{d.imageCaption}</figcaption>}
+      </figure>
+    )}
+    <div class="prose"><Content /></div>
+    {d.tags.length > 0 && <div class="tags">{d.tags.map((t: string) => <span>{t}</span>)}</div>}
+  </article>
+
+  {relacionadas.length > 0 && (
+    <div class="container">
+      <div class="section-title"><h2>Más en {d.category}</h2></div>
+      <div class="grid">{relacionadas.map((a: any) => <Card article={a} />)}</div>
+    </div>
+  )}
+</BaseLayout>

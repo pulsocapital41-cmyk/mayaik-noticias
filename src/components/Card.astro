@@ -1,0 +1,19 @@
+---
+import { slugify } from '../config';
+interface Props { article: any; size?: 'normal' | 'compact'; }
+const { article, size = 'normal' } = Astro.props;
+const d = article.data;
+const fecha = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }).format(d.pubDate);
+---
+
+<article class:list={['card', size]}>
+  <a href={`/noticias/${article.id}/`} class="card-img" tabindex="-1" aria-hidden="true">
+    <img src={d.image} alt="" loading="lazy" width="640" height="400" />
+  </a>
+  <div class="card-body">
+    <a class="chip" href={`/seccion/${slugify(d.category)}/`}>{d.category}</a>
+    <h3 class="card-title"><a href={`/noticias/${article.id}/`}>{d.title}</a></h3>
+    {size === 'normal' && d.excerpt && <p class="card-excerpt">{d.excerpt}</p>}
+    <p class="card-meta">{fecha}</p>
+  </div>
+</article>

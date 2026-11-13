@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Card from '../components/Card.astro';
+import { getCollection } from 'astro:content';
+import { SECTIONS, slugify } from '../config';
+
+const todas = (await getCollection('noticias')).sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+// Portada: la nota marcada como destacada más reciente, o si no hay, la más nueva.
+const principal = todas.find((a) => a.data.featured) ?? todas[0];
+const resto = todas.filter((a) => a.id !== principal.id);
+const laterales = resto.slice(0, 3);
+const ultimas = resto.slice(3, 12);
+const porSeccion = SECTIONS.map((s) => ({
+  ...s,
+  notas: todas.filter((a) => slugify(a.data.category) === s.slug).slice(0, 3),
+})).filter((s) => s.notas.length > 0);
+const d = principal.data;
+---
+
+<BaseLayout>
+  <div class="container">
+    <section class="hero" aria-label="Nota principal">
+      <article class="hero-main">
+        <img src={d.image} alt="" fetchpriority="high" />
+        <div class="hero-text">
+          <a class="chip" href={`/seccion/${slugify(d.category)}/`}>{d.category}</a>
+          <h1><a href={`/noticias/${principal.id}/`}>{d.title}</a></h1>
+          {d.excerpt && <p>{d.excerpt}</p>}
+        </div>
+      </article>
+      <div class="hero-side">
+        {laterales.map((a) => <Card article={a} size="compact" />)}
+      </div>
+    </section>
+
+    <div class="section-title"><h2>Últimas noticias</h2></div>
+    <div class="grid">
+      {ultimas.map((a) => <Card article={a} />)}
+    </div>
+
+    {porSeccion.map((s) => (
+      <section>
+        <div class="section-title">
+          <h2>{s.name}</h2>
+          <a href={`/seccion/${s.slug}/`}>Ver todas →</a>
+        </div>
+        <div class="grid">
+          {s.notas.map((a) => <Card article={a} />)}
+        </div>
+      </section>
+    ))}
+  </div>
+</BaseLayout>
